@@ -10,15 +10,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 )
-
-var default_sizes = [][]int{
-	{16, 16},
-	{24, 24},
-	{32, 32},
-	{48, 48},
-	{256, 256},
-}
 
 func main() {
 	os.Exit(run())
@@ -31,9 +25,12 @@ func run() int {
 	var output_filepath string
 	flag.StringVar(&output_filepath, "o", "", "Specify output file path (.ico)")
 
+	var sizes string
+	flag.StringVar(&sizes, "s", "16,24,32,48,256", "Specify sizes of icon (maximum is 256)")
+
 	flag.Parse()
 
-	if input_filepath == "" || output_filepath == "" {
+	if input_filepath == "" || output_filepath == "" || sizes == "" {
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
 		flag.PrintDefaults()
 		return 1
@@ -41,11 +38,14 @@ func run() int {
 
 	var icons [][]byte
 
-	for _, size := range default_sizes {
-		width := size[0]
-		height := size[1]
+	for _, size := range strings.Split(sizes, ",") {
+		size_uint, err := strconv.ParseUint(size, 10, 32)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %s\n", "invalid size: \""+size+"\"")
+			return 1
+		}
 
-		icon, err := PngResize(input_filepath, width, height)
+		icon, err := PngResize(input_filepath, int(size_uint), int(size_uint))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
 			return 1
