@@ -1,0 +1,61 @@
+name: Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      choice:
+        type: choice
+        required: true
+        options:
+          - "Artifact"
+          - "Release"
+      version:
+        type: string
+        required: false
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [linux, windows, darwin]
+        arch: [amd64, arm64]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          check-latest: true
+      - name: Build
+        run: |
+          go build -ldflags="-s"
+        env:
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ico-encoder-${{ matrix.os }}-${{ matrix.arch }}
+          path: ./ico-encoder*
+
+  release:
+    if: github.event.inputs.choice == 'Release'
+    runs-on: ubuntu-24.04
+    needs: [build]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ico-encoder-*
+          path: artifacts
+      - name: Rename
+        run: |
+          mkdir ./outputs
+          find ./artifacts -type f | while read file; do
+            artifact_name=$(basename "$(dirname "$file")")
+            mv "$file" "./outputs/$artifact_name"
+          done
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ github.event.inputs.version }}
+          tag_name: ${{ github.event.inputs.version }}
+          files: |
+            ./outputs/*
