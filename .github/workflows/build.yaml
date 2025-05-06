@@ -50,8 +50,10 @@ jobs:
         run: |
           mkdir ./outputs
           find ./artifacts -type f | while read file; do
-            artifact_name="${file##*/}"
-            mv "$file" "./outputs/$artifact_name"
+            ext="${file##*.}"
+            artifact_name=$(basename "$(dirname "$file")")
+            [ "$ext" != "$file" ] && new_name="$artifact_name.$ext" || new_name="$artifact_name"
+            mv "$file" "./outputs/$new_name"
           done
       - uses: softprops/action-gh-release@v2
         with:
