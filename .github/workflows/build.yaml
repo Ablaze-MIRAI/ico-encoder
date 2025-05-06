@@ -53,7 +53,7 @@ jobs:
             base=$(basename $file)
             ext="${base##*.}"
             artifact_name=$(basename "$(dirname "$file")")
-            new_name="$artifact_name.$ext"
+            ["$base" != "$ext"] && new_name="$artifact_name.$ext" || new_name="$artifact_name"
             mv "$file" "./outputs/$new_name"
           done
       - uses: softprops/action-gh-release@v2
